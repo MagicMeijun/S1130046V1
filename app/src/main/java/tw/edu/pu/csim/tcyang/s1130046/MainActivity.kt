@@ -327,7 +327,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
             )
 
             Text(
-                text = "作者：資管二B 李維駿",
+                text = "作者：資管二B 李維駿 ",
                 fontSize = 18.sp,
                 color = Color.Black
             )
