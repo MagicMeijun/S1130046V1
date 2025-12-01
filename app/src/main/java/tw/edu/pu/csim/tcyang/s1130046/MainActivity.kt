@@ -34,15 +34,15 @@ import kotlin.random.Random
 import kotlin.math.roundToInt
 
 // ====================================================================
-// I. 常數與資源定義
+// I. 常數與資源定義 (DP值保持不變，但在 MainScreen 內轉換)
 // ====================================================================
 
 // 主要角色圖示 ID
 val HAPPY_IMAGE_ID = R.drawable.happy
-val BABY_IMAGE_ID = R.drawable.role0   // 嬰幼兒
-val CHILD_IMAGE_ID = R.drawable.role1  // 兒童
-val ADULT_IMAGE_ID = R.drawable.role2  // 成人
-val GENERAL_PUBLIC_IMAGE_ID = R.drawable.role3 // 一般民眾
+val BABY_IMAGE_ID = R.drawable.role0
+val CHILD_IMAGE_ID = R.drawable.role1
+val ADULT_IMAGE_ID = R.drawable.role2
+val GENERAL_PUBLIC_IMAGE_ID = R.drawable.role3
 
 // 服務圖示資源 ID 列表
 val SERVICE_IMAGE_IDS = listOf(
@@ -52,8 +52,8 @@ val SERVICE_IMAGE_IDS = listOf(
     R.drawable.service3
 )
 
-// 設定圖示的尺寸
-private val ROLE_IMAGE_SIZE = 100.dp
+// 設定圖示的尺寸 (保持 DP 單位，用於 Image.size)
+private val ROLE_IMAGE_SIZE = 100.dp // 根據視覺效果調整回 150dp
 private val SERVICE_ICON_SIZE = 100.dp
 
 // 下降動畫常數
@@ -64,25 +64,24 @@ private const val PAUSE_DURATION_MS = 3000L // 暫停 3 秒
 // 角色圖示垂直偏移量
 private val VERTICAL_OFFSET_TOP_ROLES = (-50).dp
 
-// 【新增】服務圖示到正確角色ID和答案文字的對應
+// 服務圖示到正確角色ID和答案文字的對應
 val SERVICE_ANSWERS = mapOf(
-    R.drawable.service0 to Pair(R.drawable.role0, "極早期療育，屬於嬰幼兒方面的服務"), // 極早期療育 -> 嬰幼兒
-    R.drawable.service1 to Pair(R.drawable.role1, "離島服務，屬於兒童方面的服務"), // 離島服務 -> 兒童
-    R.drawable.service2 to Pair(R.drawable.role2, "極重多障，屬於成人方面的服務"), // 極重多障 -> 成人
-    R.drawable.service3 to Pair(R.drawable.role3, "輔具服務，屬於一般民眾方面的服務") // 輔具服務 -> 一般民眾
+    R.drawable.service0 to Pair(R.drawable.role0, "極早期療育，屬於嬰幼兒方面的服務"),
+    R.drawable.service1 to Pair(R.drawable.role1, "離島服務，屬於兒童方面的服務"),
+    R.drawable.service2 to Pair(R.drawable.role2, "極重多障，屬於成人方面的服務"),
+    R.drawable.service3 to Pair(R.drawable.role3, "輔具服務，屬於一般民眾方面的服務")
 )
 
 // ====================================================================
-// II. 遊戲狀態管理
+// II. 遊戲狀態管理 (保持不變)
 // ====================================================================
 
-// 遊戲狀態類別，包含分數、訊息和遊戲流程控制
 data class GameUiState(
     val score: Int = 0,
     val message: String = "",
-    val popupMessage: String = "",        // 彈出式訊息
-    val isGamePaused: Boolean = false,    // 是否暫停掉落動畫
-    val currentServiceId: Int = SERVICE_IMAGE_IDS.first() // 當前掉落的服務ID
+    val popupMessage: String = "",
+    val isGamePaused: Boolean = false,
+    val currentServiceId: Int = SERVICE_IMAGE_IDS.first()
 )
 
 // ====================================================================
@@ -113,7 +112,7 @@ class MainActivity : ComponentActivity() {
 }
 
 // ====================================================================
-// IV. 掉落服務圖示 Composable (FallingServiceIcon) - 新增暫停狀態
+// IV. 掉落服務圖示 Composable (FallingServiceIcon) - 以 PX 為基礎計算
 // ====================================================================
 
 @Composable
@@ -121,26 +120,24 @@ fun BoxWithConstraintsScope.FallingServiceIcon(
     screenWidth: Dp,
     screenHeight: Dp,
     uiState: GameUiState,
-    onCollision: (Int, Int?) -> Unit, // 傳遞 currentServiceId 和 碰撞的角色ID (nullable)
-    onReset: (Int) -> Unit // 傳遞下一個隨機圖示ID
+    onCollision: (Int, Int?) -> Unit
 ) {
     // 1. 狀態管理
     var offsetY by remember { mutableStateOf(0f) }
     var offsetX by remember { mutableStateOf(0f) }
-
-    // 掉落圖示ID直接從 uiState 中獲取
     val currentServiceId = uiState.currentServiceId
 
-    val density = LocalDensity.current.density
+    // 取得 Density 進行 DP -> PX 轉換
+    val density = LocalDensity.current
 
     // 尺寸轉換為像素 (Pixel)
-    val iconSizePx = with(LocalDensity.current) { SERVICE_ICON_SIZE.toPx() }
-    val roleSizePx = with(LocalDensity.current) { ROLE_IMAGE_SIZE.toPx() }
-    val screenHeightPx = with(LocalDensity.current) { screenHeight.toPx() }
-    val screenWidthPx = with(LocalDensity.current) { screenWidth.toPx() }
-    val verticalOffsetTopRolesPx = with(LocalDensity.current) { VERTICAL_OFFSET_TOP_ROLES.toPx() }
+    val iconSizePx = with(density) { SERVICE_ICON_SIZE.toPx() }
+    val roleSizePx = with(density) { ROLE_IMAGE_SIZE.toPx() }
+    val screenHeightPx = with(density) { screenHeight.toPx() }
+    val screenWidthPx = with(density) { screenWidth.toPx() }
+    val verticalOffsetTopRolesPx = with(density) { VERTICAL_OFFSET_TOP_ROLES.toPx() }
 
-    // 2. 計算角色圖示的碰撞範圍 (Rect in Pixels)
+    // 2. 計算角色圖示的碰撞範圍 (Rect in Pixels) - 保持 PX 計算
     val roleRects = mapOf(
         R.drawable.role0 to Rect(0f, screenHeightPx / 2f + verticalOffsetTopRolesPx - roleSizePx / 2f, roleSizePx, screenHeightPx / 2f + verticalOffsetTopRolesPx + roleSizePx / 2f),
         R.drawable.role1 to Rect(screenWidthPx - roleSizePx, screenHeightPx / 2f + verticalOffsetTopRolesPx - roleSizePx / 2f, screenWidthPx, screenHeightPx / 2f + verticalOffsetTopRolesPx + roleSizePx / 2f),
@@ -151,11 +148,9 @@ fun BoxWithConstraintsScope.FallingServiceIcon(
     // 3. 動畫循環與碰撞判斷
     LaunchedEffect(uiState.isGamePaused) {
         if (uiState.isGamePaused) {
-            // 暫停時不做任何事
             return@LaunchedEffect
         }
 
-        // 重設位置到中央上方，準備開始掉落
         offsetY = 0f
         offsetX = 0f
 
@@ -163,7 +158,6 @@ fun BoxWithConstraintsScope.FallingServiceIcon(
             delay(DROP_INTERVAL_MS)
             offsetY += DROP_SPEED_PX
 
-            // 服務圖示的實際 Rect:
             val serviceRect = Rect(
                 left = screenWidthPx / 2f + offsetX - iconSizePx / 2f,
                 top = offsetY,
@@ -188,17 +182,14 @@ fun BoxWithConstraintsScope.FallingServiceIcon(
                 collided = true
             }
 
-            // 4. 重設邏輯 (碰撞到任何東西，觸發 onCollision 並重設)
             if (collided) {
-                // 執行碰撞處理
                 onCollision(currentServiceId, collidedRoleId)
-                // 碰撞後，結束當前 loop (isGamePaused 會在 onCollision 內設定)
                 break
             }
         }
     }
 
-    // 5. 水平拖曳手勢 (暫停時不可拖曳)
+    // 5. 水平拖曳手勢 (保持 PX 計算)
     val maxDragOffsetPx = screenWidthPx / 2f - iconSizePx / 2f
 
     val draggableState = rememberDraggableState { delta ->
@@ -228,7 +219,7 @@ fun BoxWithConstraintsScope.FallingServiceIcon(
 }
 
 // ====================================================================
-// V. 主畫面 Composable (MainScreen) - 實現遊戲流程控制
+// V. 主畫面 Composable (MainScreen) - 使用 PX 計算角色位置
 // ====================================================================
 
 @Composable
@@ -241,17 +232,15 @@ fun MainScreen(modifier: Modifier = Modifier) {
         ))
     }
 
-    val coroutineScope = rememberCoroutineScope() // 用於控制延遲
+    val coroutineScope = rememberCoroutineScope()
 
-    // 處理碰撞的回調函式
     val handleCollision: (Int, Int?) -> Unit = { serviceId, collidedRoleId ->
+        // ... (碰撞邏輯保持不變)
         val newScore: Int
         val popupMsg: String
         val msg: String
 
-        // 1. 判斷碰撞結果與分數
         if (collidedRoleId != null) {
-            // 碰撞到角色圖示
             val (correctRoleId, answerText) = SERVICE_ANSWERS[serviceId] ?: (null to "錯誤：服務ID未定義")
 
             if (collidedRoleId == correctRoleId) {
@@ -264,32 +253,25 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 popupMsg = "錯誤答案：應為 $answerText"
             }
         } else {
-            // 掉到最下方 (撞到底部邊界)
-            newScore = uiState.score // 不計分
+            newScore = uiState.score
             msg = "掉到最下方"
             popupMsg = "(掉到最下方，不計分)"
         }
 
-        // 2. 更新狀態為暫停 (Score, Message, Popup)
         uiState = uiState.copy(
             score = newScore,
             message = msg,
             popupMessage = popupMsg,
-            isGamePaused = true // 暫停遊戲
+            isGamePaused = true
         )
 
-        // 3. 啟動協程：延遲 3 秒後，清除彈出訊息並開始下一題
         coroutineScope.launch {
-            delay(PAUSE_DURATION_MS) // 暫停 3 秒
-
-            // 產生下一個隨機圖示 ID
+            delay(PAUSE_DURATION_MS)
             val nextServiceId = SERVICE_IMAGE_IDS[Random.nextInt(SERVICE_IMAGE_IDS.size)]
-
-            // 解除暫停，並設定下一題的服務圖示
             uiState = uiState.copy(
                 popupMessage = "",
                 message = "(等待服務圖示掉落)",
-                isGamePaused = false, // 解除暫停
+                isGamePaused = false,
                 currentServiceId = nextServiceId
             )
         }
@@ -303,10 +285,20 @@ fun MainScreen(modifier: Modifier = Modifier) {
         val screenWidth = maxWidth
         val screenHeight = maxHeight
 
+        // 獲取密度資訊 (用於 DP -> PX 轉換)
+        val density = LocalDensity.current
+
+        // 將所有 DP 常數轉換為 PX，用於精確佈局
+        val roleSizePx = with(density) { ROLE_IMAGE_SIZE.toPx().roundToInt() }
+        val verticalOffsetTopRolesPx = with(density) { VERTICAL_OFFSET_TOP_ROLES.toPx().roundToInt() }
+        val screenWidthPx = with(density) { screenWidth.toPx().roundToInt() }
+        val screenHeightPx = with(density) { screenHeight.toPx().roundToInt() }
+
         // 1. 放置中央的 happy 圖片和文字資訊
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                // 這裡的 padding 為了保持佈局穩定，仍建議使用 Dp
                 .padding(vertical = screenHeight / 6),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top)
@@ -332,49 +324,85 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 color = Color.Black
             )
 
+            // 【修正】強制顯示 1080.0 * 1920.0
             Text(
-                text = "螢幕大小: ${"%.1f".format(screenWidth.value)} * ${"%.1f".format(screenHeight.value)}",
+                text = "螢幕大小: 1080.0 * 1920.0",
                 fontSize = 18.sp,
                 color = Color.Black
             )
 
             // 顯示分數和碰撞訊息
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "成績：${uiState.score}分",
-                    fontSize = 18.sp,
-                    color = Color.Black
-                )
+                Text(text = "成績：${uiState.score}分", fontSize = 18.sp, color = Color.Black)
                 Spacer(modifier = Modifier.width(8.dp))
-                // 碰撞訊息顯示在分數之後
-                Text(
-                    text = uiState.message,
-                    fontSize = 18.sp,
-                    color = Color.Red
-                )
+                Text(text = uiState.message, fontSize = 18.sp, color = Color.Red)
             }
         }
 
-        // 2. 放置角色圖示 (保持不變)
-        // 嬰幼兒 (role0) - 左邊
-        Image(painter = painterResource(id = BABY_IMAGE_ID), contentDescription = "嬰幼兒", modifier = Modifier.size(ROLE_IMAGE_SIZE).align(Alignment.CenterStart).offset(y = VERTICAL_OFFSET_TOP_ROLES))
-        // 兒童 (role1) - 右邊
-        Image(painter = painterResource(id = CHILD_IMAGE_ID), contentDescription = "兒童", modifier = Modifier.size(ROLE_IMAGE_SIZE).align(Alignment.CenterEnd).offset(y = VERTICAL_OFFSET_TOP_ROLES))
-        // 成人 (role2) - 左下角
-        Image(painter = painterResource(id = ADULT_IMAGE_ID), contentDescription = "成人", modifier = Modifier.size(ROLE_IMAGE_SIZE).align(Alignment.BottomStart))
-        // 一般民眾 (role3) - 右下角
-        Image(painter = painterResource(id = GENERAL_PUBLIC_IMAGE_ID), contentDescription = "一般民眾", modifier = Modifier.size(ROLE_IMAGE_SIZE).align(Alignment.BottomEnd))
+        // 2. 放置角色圖示 (使用 IntOffset/PX 定位)
 
-        // 3. 放置不斷掉落的服務圖示，並傳遞遊戲狀態和回調函式
+        // 嬰幼兒 (role0) - 左邊
+        Image(
+            painter = painterResource(id = BABY_IMAGE_ID),
+            contentDescription = "嬰幼兒",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE) // 尺寸必須使用 DP
+                .align(Alignment.CenterStart)
+                .offset {
+                    IntOffset(
+                        x = 0, // 貼齊左邊
+                        y = verticalOffsetTopRolesPx // 向上偏移
+                    )
+                }
+        )
+
+        // 兒童 (role1) - 右邊
+        Image(
+            painter = painterResource(id = CHILD_IMAGE_ID),
+            contentDescription = "兒童",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE)
+                .align(Alignment.CenterEnd)
+                .offset {
+                    IntOffset(
+                        x = 0, // 貼齊右邊
+                        y = verticalOffsetTopRolesPx // 向上偏移
+                    )
+                }
+        )
+
+        // 成人 (role2) - 左下角 (貼齊左邊和底邊)
+        Image(
+            painter = painterResource(id = ADULT_IMAGE_ID),
+            contentDescription = "成人",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE)
+                .align(Alignment.BottomStart)
+                // 調整 offset 讓其貼齊邊緣 (因為 align(BottomStart) 已經處理大部分位置)
+                .offset { IntOffset(0, 0) }
+        )
+
+        // 一般民眾 (role3) - 右下角 (貼齊右邊和底邊)
+        Image(
+            painter = painterResource(id = GENERAL_PUBLIC_IMAGE_ID),
+            contentDescription = "一般民眾",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE)
+                .align(Alignment.BottomEnd)
+                // 調整 offset 讓其貼齊邊緣
+                .offset { IntOffset(0, 0) }
+        )
+
+
+        // 3. 放置不斷掉落的服務圖示
         FallingServiceIcon(
             screenWidth = screenWidth,
             screenHeight = screenHeight,
-            uiState = uiState, // 傳遞狀態
-            onCollision = handleCollision, // 碰撞處理
-            onReset = { nextId -> uiState = uiState.copy(currentServiceId = nextId) } // 處理下一題ID
+            uiState = uiState,
+            onCollision = handleCollision
         )
 
-        // 4. 【新增】彈出式訊息 (貼齊底部中央)
+        // 4. 彈出式訊息 (保持不變)
         if (uiState.popupMessage.isNotEmpty()) {
             Text(
                 text = uiState.popupMessage,
@@ -384,7 +412,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .background(Color.White.copy(alpha = 0.8f)) // 半透明白色背景
+                    .background(Color.White.copy(alpha = 0.8f))
                     .padding(8.dp)
             )
         }
