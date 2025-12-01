@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,30 +22,30 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import tw.edu.pu.csim.tcyang.s1130046.ui.theme.S1130046Theme
 
-// 假設您在 drawable 資料夾中有名為 happy 的圖片
-// 如果您的圖片名稱不同，請更改 R.drawable.happy
-val HAPPY_IMAGE_ID = R.drawable.happy
+// 【修正圖片資源名稱為 role0 到 role3】
+val HAPPY_IMAGE_ID = R.drawable.happy // 中央圖片
+val BABY_IMAGE_ID = R.drawable.role0   // 嬰幼兒
+val CHILD_IMAGE_ID = R.drawable.role1  // 兒童
+val ADULT_IMAGE_ID = R.drawable.role2  // 成人
+val GENERAL_PUBLIC_IMAGE_ID = R.drawable.role3 // 一般民眾
+
+// 設定圖片的新尺寸
+private val ROLE_IMAGE_SIZE = 150.dp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 1. 設定全螢幕沉浸模式以隱藏系統列
-        hideSystemUI()
+        hideSystemUI() // 隱藏系統列
 
         setContent {
             S1130046Theme {
-                // 將 Greeting 替換為您的新主畫面
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    MainScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
     }
 
-    // 2. 隱藏系統列的函式
     private fun hideSystemUI() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).let { controller ->
@@ -61,68 +60,105 @@ class MainActivity : ComponentActivity() {
  */
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
-    // 設置 Box 作為容器，用於設置黃色背景
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFFFFF00)) // 黃色背景 (使用 ARGB 格式)
+            .background(Color(0xFFFFFF00)) // 黃色背景
     ) {
-        // 取得螢幕的寬度和高度，並轉換為 dp 單位
-        val widthDp = maxWidth
-        val heightDp = maxHeight
+        val screenWidth = maxWidth
+        val screenHeight = maxHeight
 
-        // 將 dp 轉換為浮點數，以便顯示
-        val widthFloat = widthDp.value
-        val heightFloat = heightDp.value
-
-        // Column 用於垂直排列所有內容 (圖片和文字)
+        // ----------------------------------------------------
+        // 1. 放置中央的 happy 圖片和文字資訊 (調整為更集中)
+        // ----------------------------------------------------
         Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally // 讓 Column 內的所有內容水平居中
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = screenHeight / 6), // 稍微向下偏移，讓頂部有空間
+            horizontalAlignment = Alignment.CenterHorizontally,
+            // 讓內容在 Column 內集中，而不是分散填滿
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top)
         ) {
-            // 1. 圖片 (放在正中央) - 使用 Spacer 將其推到中央附近
-            Spacer(modifier = Modifier.weight(1f)) // 佔據上方空間
 
+            // 中央圖片 (Happy Image)
             Image(
                 painter = painterResource(id = HAPPY_IMAGE_ID),
                 contentDescription = "Happy Image",
-                modifier = Modifier.size(200.dp) // 可以調整圖片大小
+                modifier = Modifier.size(200.dp)
             )
 
-            Spacer(modifier = Modifier.weight(0.5f)) // 圖片下方的間隔，權重小一點
+            // 文字資訊
 
-            // 2. 文字資訊
-
-            // 第一行字：瑪麗亞基金會服務大考驗
             Text(
                 text = "瑪麗亞基金會服務大考驗",
                 fontSize = 20.sp,
-                modifier = Modifier.padding(top = 8.dp)
+                color = Color.Black,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 16.dp)
             )
 
-            // 第二行：資管二B 李維駿
-            Spacer(modifier = Modifier.height(10.dp))
+            // 【修正作者名稱】
             Text(
-                text = "資管二B 李維駿",
-                fontSize = 18.sp
+                text = "作者：資管三B 楊子青",
+                fontSize = 18.sp,
+                color = Color.Black
             )
 
-            // 第三行：螢幕大小 (讀取螢幕寬高)
-            Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "螢幕大小 寬 ${"%.1f".format(widthFloat)} * 高 ${"%.1f".format(heightFloat)}",
-                fontSize = 16.sp
+                text = "螢幕大小: ${"%.1f".format(screenWidth.value)} * ${"%.1f".format(screenHeight.value)}",
+                fontSize = 18.sp,
+                color = Color.Black
             )
 
-            // 第四行：成績
-            Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "成績："+"分",
-                fontSize = 16.sp
+                text = "成績：0分", // 根據截圖，預設顯示 0 分
+                fontSize = 18.sp,
+                color = Color.Black
             )
-
-            Spacer(modifier = Modifier.weight(1f)) // 佔據下方空間，將內容保持在垂直中央
         }
+
+        // ----------------------------------------------------
+        // 2. 放置角色圖示 (使用新的 ROLE_IMAGE_SIZE = 150.dp)
+        // ----------------------------------------------------
+
+        // 嬰幼兒 (role0) - 左邊，下方切齊螢幕高 1/2
+        Image(
+            painter = painterResource(id = BABY_IMAGE_ID),
+            contentDescription = "嬰幼兒",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE)
+                .align(Alignment.BottomStart)
+                .offset(y = -screenHeight / 2) // 向上偏移螢幕高度的一半
+        )
+
+        // 兒童 (role1) - 右邊，下方切齊螢幕高 1/2
+        Image(
+            painter = painterResource(id = CHILD_IMAGE_ID),
+            contentDescription = "兒童",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE)
+                .align(Alignment.BottomEnd)
+                .offset(y = -screenHeight / 2) // 向上偏移螢幕高度的一半
+        )
+
+        // 成人 (role2) - 左下角
+        Image(
+            painter = painterResource(id = ADULT_IMAGE_ID),
+            contentDescription = "成人",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE)
+                .align(Alignment.BottomStart)
+        )
+
+        // 一般民眾 (role3) - 右下角
+        Image(
+            painter = painterResource(id = GENERAL_PUBLIC_IMAGE_ID),
+            contentDescription = "一般民眾",
+            modifier = Modifier
+                .size(ROLE_IMAGE_SIZE)
+                .align(Alignment.BottomEnd)
+        )
     }
 }
 
